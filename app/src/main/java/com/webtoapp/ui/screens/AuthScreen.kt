@@ -95,6 +95,9 @@ fun AuthScreen(
     
     // Google 登录加载状态
     var googleLoading by remember { mutableStateOf(false) }
+    
+    // 注册成功公告弹窗
+    var showAnnouncement by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -117,10 +120,8 @@ fun AuthScreen(
     LaunchedEffect(registerState) {
         when (registerState) {
             is FormState.Success -> {
-                // 注册成功 → authState 已变为 LoggedIn → 自动切到 ProfileScreen
-                // 先显示一个短暂的成功提示
-                snackbarHostState.showSnackbar("🎉 注册成功，已自动登录")
-                onLoginSuccess()
+                // 注册成功 → 显示云端功能公告
+                showAnnouncement = true
                 authViewModel.resetRegisterState()
             }
             is FormState.Error -> {
@@ -129,6 +130,55 @@ fun AuthScreen(
             }
             else -> {}
         }
+    }
+    
+    // 注册成功公告弹窗
+    if (showAnnouncement) {
+        AlertDialog(
+            onDismissRequest = { /* 不允许点击外部关闭 */ },
+            icon = {
+                Icon(
+                    Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "🎉 注册成功",
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "欢迎加入 WebToApp！",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "目前云端相关功能（云端构建、云端同步、远程管理等）仍在开发中，当前功能尚不完善，部分服务可能暂时不可用。\n\n我们正在积极开发中，敬请期待后续更新！",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                PremiumButton(
+                    onClick = {
+                        showAnnouncement = false
+                        onLoginSuccess()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("确认")
+                }
+            }
+        )
     }
 
     // 监听验证码发送结果
